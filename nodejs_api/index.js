@@ -1,35 +1,43 @@
-// we use ethers.js which is a library for interacting with the Ethereum Blockchain and its ecosystem
-// also we use express js to work with 
+// Import required libraries
+// ethers.js: For interacting with the Ethereum Blockchain and its ecosystem
+// express.js: For creating the REST API
+// web3: For additional Ethereum utilities
+// request: For making HTTP requests to external APIs
+// jsonwebtoken: For handling JWT authentication
 const ethers = require('ethers');
 const express = require('express');
 const web3 = require('web3');
 const request = require('request');
 const jwt = require('jsonwebtoken');
 
-const port = process.env.PORT || 8008
+// Define the port for the server
+define a port number or fallback to 8008
+const port = process.env.PORT || 8008;
 
-
+// Initialize express application
 const app = express();
 
-
+// Contract addresses for different currencies
 const CONTRACT_ADDRESS_USD = "";
 const CONTRACT_ADDRESS_JOD = "";
 const CONTRACT_ADDRESS_ILS = "";
 const CONTRACT_ADDRESS_WWW = "";
 var CONTRACT_ADDRESS = '';
 
-
+// ABI (Application Binary Interface) for interacting with the smart contract
 const ABI = [
   'function doTransfer(address _from, address _to, uint256 _amount) returns (bool)',
   'function getBalance(address wallet_addres) public view returns(uint256)'
 ];
 
+// Base route to verify server is running
 app.get('/', async (req, res) => {
   res.send({
     status: 'Welcome'
   });
 });
 
+// Function to assign the correct contract address based on currency type
 function assignCurrencyContract(currencyType) {
   if (currencyType === 0)
     CONTRACT_ADDRESS = CONTRACT_ADDRESS_USD;
@@ -43,38 +51,41 @@ function assignCurrencyContract(currencyType) {
     console.log('done');
 }
 
-// app.get('/transferWei/:val', async (req, res) => {
-//   const weiValue = web3.utils.toWei(req.params.val, 'ether');
-//   console.log(weiValue);
-// })
+// Endpoint for transferring tokens between accounts
 app.get('/transfer/:val/:sender_account/:recieved_account/:currency', verifyToken, async (req, res) => {
 
+  // Create a provider for connecting to the Ethereum network
   const provider = ethers.getDefaultProvider('ropsten');
 
+  // Define admin account credentials
   const admin_account = "";
-  const privateKey = ""; //third party
+  const privateKey = ""; //third party private key
 
+  // Parse currency type and assign contract address
   const currency = parseInt(req.params.currency);
   assignCurrencyContract(currency);
 
+  // Initialize wallet with the private key and provider
   const wallet = new ethers.Wallet(privateKey, provider);
 
+  // Initialize the contract object
   const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, wallet);
 
+  // Extract parameters from the request
   const vals = req.params.val;
-  const weiValue = web3.utils.toWei(vals, 'ether');
+  const weiValue = web3.utils.toWei(vals, 'ether'); // Convert value to Wei
   const sender_account = req.params.sender_account;
   const recieved_account = req.params.recieved_account;
 
   try {
-
-    // now we just call the function that's already declared in the abi and pass it the known variables
+    // Call the doTransfer function in the smart contract
     const result = await contract.doTransfer(sender_account, recieved_account, weiValue);
+
+    // Verify JWT and send response
     jwt.verify(req.token, 'ethsecretkey', (err, authData) => {
       if (err) {
         res.send({ error: err });
       } else {
-        // normal response
         res.json({
           status: "1",
           value: weiValue,
@@ -84,36 +95,38 @@ app.get('/transfer/:val/:sender_account/:recieved_account/:currency', verifyToke
     });
 
   } catch (e) {
-    res.json(
-      e
-    );
+    res.json(e);
   }
 });
+
+// Endpoint for checking account balance
 app.get('/balance/:account_address/:currency', verifyToken, async (req, res) => {
 
+  // Create a provider for connecting to the Ethereum network
   const provider = ethers.getDefaultProvider('ropsten');
 
-  const privateKey = ""; //third party
+  const privateKey = ""; //third party private key
 
+  // Initialize wallet and assign contract address
   const wallet = new ethers.Wallet(privateKey, provider);
-
   const currency = parseInt(req.params.currency);
   assignCurrencyContract(currency);
 
+  // Initialize the contract object
   const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, wallet);
-
   const account_address = req.params.account_address;
 
-  try {// now we just call the function that's already declared in the abi and pass it the known variables
+  try {
+    // Call the getBalance function in the smart contract
     const wei_result = await contract.getBalance(account_address);
     const fff = web3.utils.fromWei(wei_result.toString(), 'wei');
     const balance = web3.utils.fromWei(wei_result.toString(), 'ether');
 
+    // Verify JWT and send response
     jwt.verify(req.token, 'ethsecretkey', (err, authData) => {
       if (err) {
         res.send({ error: err });
       } else {
-        // normal response
         res.send({
           status: true,
           account: account_address,
@@ -124,70 +137,58 @@ app.get('/balance/:account_address/:currency', verifyToken, async (req, res) => 
       }
     });
 
-
   } catch (e) {
-    res.json(
-      e
-    );
+    res.json(e);
   }
 });
 
+// Endpoint for fetching exchange rates
 app.get('/rates/:from/:to', verifyToken, (req, res) => {
   let from = req.params.from;
   let to = req.params.to;
+
+  // Call external API to get exchange rates
   request(`https://api.apilayer.com/exchangerates_data/latest?symbols=${to}&base=${from}&apikey=`, (error, response, body) => {
     if (error) {
-      // If there is an error, tell the user 
-      res.send({ error: error })
-    }
-    // Otherwise do something with the API data and send a response
-    else {
+      res.send({ error: error });
+    } else {
+      // Verify JWT and send response
       jwt.verify(req.token, 'ethsecretkey', (err, authData) => {
         if (err) {
           res.send({ error: err });
         } else {
-          // normal response
           res.send(body);
         }
       });
     }
-
-
-  });
-}); app.get('/history/:walletAddress/:currency', verifyToken, (req, res) => {
-  const walletAddress = req.params.walletAddress;
-  console.log(req.params.currency);
-
-  const currency = parseInt(req.params.currency);
-  console.log(currency);
-
-  assignCurrencyContract(currency);
-  console.log(walletAddress);
-  console.log(CONTRACT_ADDRESS);
-  request(`https://api-ropsten.etherscan.io/api?module=account&action=tokentx&contractaddress=${CONTRACT_ADDRESS}&address=${walletAddress}&page=1&offset=100&startblock=0&endblock=99999999&sort=desc&apikey=`, (error, response, body) => {
-    if (error) {
-      // If there is an error, tell the user 
-      res.send({ error: error })
-    }
-    // Otherwise do something with the API data and send a response
-    else {
-      jwt.verify(req.token, 'ethsecretkey', (err, authData) => {
-        if (err) {
-          res.send({ error: err });
-        } else {
-          // normal response
-          res.send(body);
-        }
-      });
-    }
-
   });
 });
 
+// Endpoint for fetching transaction history of a wallet
+app.get('/history/:walletAddress/:currency', verifyToken, (req, res) => {
+  const walletAddress = req.params.walletAddress;
 
+  const currency = parseInt(req.params.currency);
+  assignCurrencyContract(currency);
 
+  // Call external API to get transaction history
+  request(`https://api-ropsten.etherscan.io/api?module=account&action=tokentx&contractaddress=${CONTRACT_ADDRESS}&address=${walletAddress}&page=1&offset=100&startblock=0&endblock=99999999&sort=desc&apikey=`, (error, response, body) => {
+    if (error) {
+      res.send({ error: error });
+    } else {
+      jwt.verify(req.token, 'ethsecretkey', (err, authData) => {
+        if (err) {
+          res.send({ error: err });
+        } else {
+          res.send(body);
+        }
+      });
+    }
+  });
+});
+
+// Endpoint for generating JWT token
 app.post('/login/:account_address', (req, res) => {
-
   jwt.sign({ user: req.params.account_address }, 'ethsecretkey', (err, token) => {
     res.json({
       token: token
@@ -195,30 +196,18 @@ app.post('/login/:account_address', (req, res) => {
   });
 });
 
-
-// FORMAT OF TOKEN
-// Authorization: Bearer <access_token>
-
-// Verify Token
+// Middleware to verify JWT token
 function verifyToken(req, res, next) {
-  // Get auth header value
-  const bearerHeader = req.headers['authorization'];
-  // Check if bearer is undefined
+  const bearerHeader = req.headers['authorization']; // Extract authorization header
   if (typeof bearerHeader !== 'undefined') {
-    // Split at the space
-    const bearer = bearerHeader.split(' ');
-    // Get token from array
+    const bearer = bearerHeader.split(' '); // Split the Bearer token
     const bearerToken = bearer[1];
-    // Set the token
-    req.token = bearerToken;
-    // Next middleware
-    next();
+    req.token = bearerToken; // Set token for further use
+    next(); // Call next middleware
   } else {
-    // Forbidden
-    res.sendStatus(403);
+    res.sendStatus(403); // Forbidden
   }
-
 }
 
-app.listen(port, () => console.log(`Server has started on port: ${port}`))
-
+// Start the server on the specified port
+app.listen(port, () => console.log(`Server has started on port: ${port}`));
