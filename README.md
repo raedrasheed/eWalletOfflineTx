@@ -123,6 +123,11 @@ A blockchain-based mobile wallet application that supports secure offline transa
 
 ---
 
+## Reference Article
+[https://www.researchgate.net/publication/369733848_Blockchain_Mobile_Wallet_with_Secure_Offline_Transactions](https://www.researchgate.net/publication/369733848_Blockchain_Mobile_Wallet_with_Secure_Offline_Transactions).
+
+---
+
 ## License
 
 This project is licensed under the [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/).
