@@ -30,28 +30,32 @@ import java.util.UUID;
 
 public class MainActivity extends AppCompatActivity {
 
+    // Request codes for enabling Bluetooth and making the device discoverable
     private static final int REQUEST_ENABLE_BT = 0;
     private static final int REQUEST_DISCOVER_BT = 1;
 
+    // Constants for tracking Bluetooth connection state
     static final int STATE_LISTENING = 1;
     static final int STATE_CONNECTING = 2;
     static final int STATE_CONNECTED = 3;
     static final int STATE_CONNECTION_FAILED = 4;
     static final int STATE_MESSAGE_RECEIVED = 5;
 
-    private boolean connected = false;
+    private boolean connected = false; // Indicates if a device is connected
 
+    // UI elements
     TextView mStatusBluetoothTv, mStatusTv;
     ImageView mBluetoothIv;
     Button mOnBtn, mOffBtn, mDiscoverBtn, mPairedBtn, mSendBtn, mRecieveBtn;
     ListView mBTDevicesLv;
 
-    BluetoothDevice[] btArray;
+    BluetoothDevice[] btArray; // Array of paired Bluetooth devices
 
-    SendReceive sendReceive;
+    SendReceive sendReceive; // Object for handling data transfer
 
-    BluetoothAdapter mBluetoothAdapter;
+    BluetoothAdapter mBluetoothAdapter; // Bluetooth adapter for managing Bluetooth operations
 
+    // Constants for app name and UUID for identifying the application
     private static final String APP_NAME = "BOWallet";
     private static UUID MY_UUID = UUID.fromString("8ce255c0-223a-11e0-ac64-0803450c9a66");
 
@@ -62,6 +66,7 @@ public class MainActivity extends AppCompatActivity {
         MY_UUID = UUID.fromString(id(this));
         setContentView(R.layout.activity_main);
 
+        // Initialize UI elements
         mStatusBluetoothTv = findViewById(R.id.statusBluetoothTv);
         mStatusTv = findViewById(R.id.statusTv);
         mBluetoothIv = findViewById(R.id.bluetoothIv);
@@ -75,20 +80,23 @@ public class MainActivity extends AppCompatActivity {
 
         mBTDevicesLv = findViewById(R.id.BTDevicesLv);
 
-        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter(); // Initialize Bluetooth adapter
 
+        // Check if Bluetooth is available on the device
         if (mBluetoothAdapter == null) {
             mStatusBluetoothTv.setText("Bluetooth is not available");
         } else {
             mStatusBluetoothTv.setText("Bluetooth is available");
         }
 
+        // Update Bluetooth status icon based on whether Bluetooth is enabled
         if (mBluetoothAdapter.isEnabled()) {
             mBluetoothIv.setImageResource(R.drawable.ic_connected);
         } else {
             mBluetoothIv.setImageResource(R.drawable.ic_disabled);
         }
 
+        // Set listeners for buttons
         mOnBtn.setOnClickListener(new View.OnClickListener() {
 
             @Override
@@ -113,7 +121,7 @@ public class MainActivity extends AppCompatActivity {
                     startActivityForResult(intent, REQUEST_DISCOVER_BT);
 
                     ServerClass serverClass = new ServerClass();
-                    serverClass.start();
+                    serverClass.start(); // Start server thread
 
                 }
             }
@@ -122,10 +130,9 @@ public class MainActivity extends AppCompatActivity {
         mOffBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-
-                    mBluetoothAdapter.disable();
-                    showToast("Turning BT off ");
-                    mBluetoothIv.setImageResource(R.drawable.ic_disabled);
+                mBluetoothAdapter.disable();
+                showToast("Turning BT off ");
+                mBluetoothIv.setImageResource(R.drawable.ic_disabled);
             }
         });
 
@@ -133,9 +140,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 if (mBluetoothAdapter.isEnabled()) {
-                    //mStatusTv.setText("Listing Devices");
                     mStatusBluetoothTv.setText("Listing Devices");
-                     Set<BluetoothDevice> BTDevices = mBluetoothAdapter.getBondedDevices();
+                    Set<BluetoothDevice> BTDevices = mBluetoothAdapter.getBondedDevices();
 
                     String[] strings = new String[BTDevices.size()];
                     btArray = new BluetoothDevice[BTDevices.size()];
@@ -150,11 +156,7 @@ public class MainActivity extends AppCompatActivity {
                         mBTDevicesLv.setAdapter(arrayAdapter);
 
                     }
-
-                    /*for(BluetoothDevice device: BTDevices){
-                        mPairedTv.append("\nDevice: " + device.getName()+", "+ BTDevices);
-                    }*/
-                }else {
+                } else {
                     showToast("Turn BT to pair devices..");
                 }
             }
@@ -165,7 +167,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 if (!connected) {
                     mStatusBluetoothTv.setText("No device paired");
-                }else {
+                } else {
                     mStatusBluetoothTv.setText("Sending..");
                 }
             }
@@ -176,7 +178,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 if (!connected) {
                     mStatusBluetoothTv.setText("No device paired");
-                }else {
+                } else {
                     mStatusBluetoothTv.setText("Receiving..");
                 }
             }
@@ -186,9 +188,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 ClientClass clientClass = new ClientClass(btArray[i]);
-                clientClass.start();
+                clientClass.start(); // Start client thread
 
-                //mStatusTv.setText("Connecting..");
                 mStatusBluetoothTv.setText("Connecting..");
             }
         });
@@ -197,12 +198,12 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        switch (requestCode){
+        switch (requestCode) {
             case REQUEST_ENABLE_BT:
-                if(resultCode == RESULT_OK){
+                if (resultCode == RESULT_OK) {
                     mBluetoothIv.setImageResource(R.drawable.ic_connected);
                     showToast("BT is on");
-                }else {
+                } else {
                     showToast("Could not on BT");
                 }
                 break;
@@ -210,7 +211,8 @@ public class MainActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
     }
 
-    private void showToast(String msg){
+    // Utility method to display a toast message
+    private void showToast(String msg) {
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
     }
 
@@ -220,27 +222,20 @@ public class MainActivity extends AppCompatActivity {
 
             switch (msg.what) {
                 case STATE_LISTENING:
-                    //mStatusTv.setText("Listening");
                     mStatusBluetoothTv.setText("Listening");
                     break;
                 case STATE_CONNECTING:
-                    //mStatusTv.setText("Connecting");
                     mStatusBluetoothTv.setText("Connecting");
                     break;
                 case STATE_CONNECTED:
-                    //mStatusTv.setText("Connected");
                     mStatusBluetoothTv.setText("Connected");
                     break;
                 case STATE_CONNECTION_FAILED:
-                    //mStatusTv.setText("Connection Failed");
                     mStatusBluetoothTv.setText("Connection Failed");
                     break;
                 case STATE_MESSAGE_RECEIVED:
                     byte[] readBuff = (byte[]) msg.obj;
                     String tempMsg = new String(readBuff, 0, msg.arg1);
-                    //messages.add(tempMsg);
-                    //blockchain.addBlock(blockchain.newBlock(tempMsg));
-                    //msg_box.append("Other: " + tempMsg + "\n");
                     break;
             }
             return true;
@@ -268,7 +263,7 @@ public class MainActivity extends AppCompatActivity {
                     message.what = STATE_CONNECTING;
                     handler.sendMessage(message);
 
-                    socket = serverSocket.accept();
+                    socket = serverSocket.accept(); // Wait for incoming connection
                 } catch (IOException e) {
                     e.printStackTrace();
                     Message message = Message.obtain();
@@ -282,7 +277,7 @@ public class MainActivity extends AppCompatActivity {
                     handler.sendMessage(message);
 
                     sendReceive = new SendReceive(socket);
-                    sendReceive.start();
+                    sendReceive.start(); // Start data transfer thread
 
                     break;
                 }
@@ -299,7 +294,7 @@ public class MainActivity extends AppCompatActivity {
             device = device1;
 
             try {
-                socket = device.createRfcommSocketToServiceRecord(MY_UUID);
+                socket = device.createRfcommSocketToServiceRecord(MY_UUID); // Create client socket
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -307,71 +302,68 @@ public class MainActivity extends AppCompatActivity {
 
         public void run() {
             try {
-                socket.connect();
-                Message message=Message.obtain();
-                message.what=STATE_CONNECTED;
+                socket.connect(); // Connect to the server
+                Message message = Message.obtain();
+                message.what = STATE_CONNECTED;
                 handler.sendMessage(message);
 
-                sendReceive=new SendReceive(socket);
-                sendReceive.start();
+                sendReceive = new SendReceive(socket);
+                sendReceive.start(); // Start data transfer thread
 
             } catch (IOException e) {
                 e.printStackTrace();
-                Message message=Message.obtain();
-                message.what=STATE_CONNECTION_FAILED;
+                Message message = Message.obtain();
+                message.what = STATE_CONNECTION_FAILED;
                 handler.sendMessage(message);
             }
         }
     }
 
-    private class SendReceive extends Thread{
+    private class SendReceive extends Thread {
         private final BluetoothSocket bluetoothSocket;
         private final InputStream inputStream;
         private final OutputStream outputStream;
 
-        public SendReceive (BluetoothSocket socket)
-        {
-            bluetoothSocket=socket;
-            InputStream tempIn=null;
-            OutputStream tempOut=null;
+        public SendReceive(BluetoothSocket socket) {
+            bluetoothSocket = socket;
+            InputStream tempIn = null;
+            OutputStream tempOut = null;
 
             try {
-                tempIn=bluetoothSocket.getInputStream();
-                tempOut=bluetoothSocket.getOutputStream();
+                tempIn = bluetoothSocket.getInputStream(); // Initialize input stream
+                tempOut = bluetoothSocket.getOutputStream(); // Initialize output stream
             } catch (IOException e) {
                 e.printStackTrace();
             }
 
-            inputStream=tempIn;
-            outputStream=tempOut;
+            inputStream = tempIn;
+            outputStream = tempOut;
         }
 
-        public void run()
-        {
-            byte[] buffer=new byte[1024];
+        public void run() {
+            byte[] buffer = new byte[1024];
             int bytes;
 
-            while (true)
-            {
+            while (true) {
                 try {
-                    bytes=inputStream.read(buffer);
-                    handler.obtainMessage(STATE_MESSAGE_RECEIVED,bytes,-1,buffer).sendToTarget();
+                    bytes = inputStream.read(buffer); // Read incoming data
+                    handler.obtainMessage(STATE_MESSAGE_RECEIVED, bytes, -1, buffer).sendToTarget();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
         }
 
-        public void write(byte[] bytes)
-        {
+        public void write(byte[] bytes) {
             try {
-                outputStream.write(bytes);
+                outputStream.write(bytes); // Write outgoing data
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
     }
 
+    // Generates and retrieves a unique ID for the device, stored in shared preferences
     private static String uniqueID = null;
     private static final String PREF_UNIQUE_ID = "PREF_UNIQUE_ID";
 
