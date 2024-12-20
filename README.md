@@ -1,4 +1,4 @@
-# eWalletOfflineTx
+# Blockchain Mobile Wallet with Secure Offline Transactions
 
 A blockchain-based mobile wallet application that supports secure offline transactions using Bluetooth and digital signatures. This project is designed to address the challenges of performing mobile payments in areas with limited or no internet access.
 
